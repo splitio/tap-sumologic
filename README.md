@@ -19,11 +19,12 @@ This tap:
     "sumologic_access_id": "ACCESS_ID",
     "sumologic_access_key": "ACCESS_KEY",
     "sumologic_root_url": "https://api.us2.sumologic.com/api",
-    "start_date": "2000-01-01T00:00:00",
+    "start_date": "2020-01-01T00:00:00",
     "tables": [{
-        "query": "_sourceCategory=prod/fastly/sdk | count by api_key | lookup orgname from /shared/split/apikey_to_orgid_mapping on api_key=api_key| sum(_count) by  orgname| sort by _sum desc",
+        "query": "_sourceCategory=prod/fastly/sdk | _timeslice 1d as day | count by day, api_key",
         "table_name": "my_table",
-        "bookmark_property": ["id"]
+        "max_lookback_days": 10,
+        time_property": ["day"]
     }]
 }
 ```

@@ -48,13 +48,11 @@ def get_schema_for_table(config: Dict, table_spec: Dict) -> Dict:
     LOGGER.info('Getting records for query to determine table schema.')
 
     q = table_spec.get('query') # TODO get query from config
-    fromTime = (datetime.utcnow() + relativedelta(minutes=-15)).strftime('%Y-%m-%dT%H:%M:%S')
-    toTime = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-    timeZone = 'UTC'
+    from_time = (datetime.utcnow() + relativedelta(minutes=-15)).strftime('%Y-%m-%dT%H:%M:%S')
+    to_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+    time_zone = 'UTC'
 
-    records = get_sumologic_records(config, q, fromTime, toTime, timeZone, limit=10)
-
-    fields = records['fields']
+    fields = get_sumologic_fields(config, q, from_time, to_time, time_zone)
 
     key_properties = []
     for field in fields:
@@ -84,8 +82,8 @@ def get_schema_for_table(config: Dict, table_spec: Dict) -> Dict:
         'key_properties': key_properties
     }
 
-def get_sumologic_records(config, q, fromTime, toTime, timeZone, limit):
-    records = []
+def get_sumologic_fields(config, q, from_time, to_time, time_zone):
+    fields = []
 
     sumologic_access_id = config['sumologic_access_id']
     sumologic_access_key = config['sumologic_access_key']
@@ -95,7 +93,7 @@ def get_sumologic_records(config, q, fromTime, toTime, timeZone, limit):
     sumo = SumoLogic(sumologic_access_id, sumologic_access_key, sumologic_root_url)
 
     delay = 5
-    search_job = sumo.search_job(q, fromTime, toTime, timeZone)
+    search_job = sumo.search_job(q, from_time, to_time, time_zone)
 
     status = sumo.search_job_status(search_job)
     while status['state'] != 'DONE GATHERING RESULTS':
@@ -107,16 +105,59 @@ def get_sumologic_records(config, q, fromTime, toTime, timeZone, limit):
     LOGGER.info(status['state'])
 
     if status['state'] == 'DONE GATHERING RESULTS':
-        count = status['recordCount']
+        response = sumo.search_job_records(search_job, limit=1)
 
-        while count > 0:
-            response = sumo.search_job_records(search_job, limit=limit)
+        fields = response['fields']
+
+    return fields
+
+def get_sumologic_records(config, q, from_time, to_time, time_zone, limit):
+    records = []
+
+    sumologic_access_id = config['sumologic_access_id']
+    sumologic_access_key = config['sumologic_access_key']
+    sumologic_root_url = config['sumologic_root_url']
+
+    LOGGER.info("Run query in sumologic")
+    sumo = SumoLogic(sumologic_access_id, sumologic_access_key, sumologic_root_url)
+
+    now_datetime = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+    custom_columns = {
+        '_SDC_EXTRACTED_AT': now_datetime,
+        '_SDC_BATCHED_AT': now_datetime,
+        '_SDC_DELETED_AT': None
+    }
+    delay = 5
+    search_job = sumo.search_job(q, from_time, to_time, time_zone)
+    LOGGER.info(search_job)
+
+    status = sumo.search_job_status(search_job)
+    while status['state'] != 'DONE GATHERING RESULTS':
+        if status['state'] == 'CANCELLED':
+            break
+        time.sleep(delay)
+        LOGGER.info(":check query status")
+        status = sumo.search_job_status(search_job)
+        LOGGER.info(status)
+
+    LOGGER.info(status['state'])
+
+    if status['state'] == 'DONE GATHERING RESULTS':
+        record_count = status['recordCount']
+        count = 0
+        while count < record_count:
+            LOGGER.info("Get records %d of %d, limit=%d", count, record_count, limit)
+            response = sumo.search_job_records(search_job, limit=limit, offset = count)
+            LOGGER.info("Got records %d of %d", count, record_count)
 
             recs = response['records']
             # extract the result maps to put them in the list of records
             for rec in recs:
-                records.append(rec['map'])
+                records.append({**rec['map'], **custom_columns})
 
-            count = (count - len(recs)) if len(recs) > 0 else 0 # make sure we exit if nothing comes back
+            if len(recs) > 0:
+                count = count + len(recs)
+            else:
+                break # make sure we exit if nothing comes back
 
     return records

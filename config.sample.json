@@ -6,6 +6,7 @@
     "tables": [{
         "query": "_sourceCategory=prod/fastly/sdk | count by api_key | lookup orgname from /shared/split/apikey_to_orgid_mapping on api_key=api_key| sum(_count) by  orgname| sort by _sum desc",
         "table_name": "my_table",
-        "bookmark_property": ["id"]
+        "max_lookback_days": "30",
+        "time_property": "day"
     }]
 }

@@ -24,7 +24,7 @@ This tap:
         "query": "_sourceCategory=prod/fastly/sdk | _timeslice 1d as day | count by day, api_key",
         "table_name": "my_table",
         "max_lookback_days": 10,
-        time_property": ["day"]
+        "time_property": ["day"]
     }]
 }
 ```

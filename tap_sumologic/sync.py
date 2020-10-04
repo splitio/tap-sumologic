@@ -63,9 +63,9 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
 
     if time_property:
         end = datetime.utcfromtimestamp(int(max_time)/1000)
-        state = write_bookmark(state, table_name, 'modified_since', end.strftime('%Y-%m-%d %H:%M:%S'))
+        state = write_bookmark(state, table_name, 'modified_since', end.strftime('%Y-%m-%dT%H:%M:%S'))
         write_state(state)
-        LOGGER.info('Wrote state with modified_since=%s', end.strftime('%Y-%m-%d %H:%M:%S'))
+        LOGGER.info('Wrote state with modified_since=%s', end.strftime('%Y-%m-%dT%H:%M:%S'))
 
     LOGGER.info('Wrote %s records for table "%s".', records_synced, table_name)
 

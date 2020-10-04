@@ -23,8 +23,11 @@ This tap:
     "tables": [{
         "query": "_sourceCategory=prod/fastly/sdk | _timeslice 1d as day | count by day, api_key",
         "table_name": "my_table",
-        "max_lookback_days": 10,
-        "time_property": ["day"]
+        "max_lookback_days": 10, 
+        "time_property": ["day"] 
     }]
 }
 ```
+
+max_lookback_days: by default is 7 days. Number of days it queries Sumologic back from today. Sumologic doesn't perform well when going to far back so use with caution.
+time_property: this is the field that has the time if any. It allows to track the last processed date. 

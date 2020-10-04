@@ -26,7 +26,7 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
 
     LOGGER.info('Syncing table "%s".', table_name)
 
-    max_lookback_days = table_spec.get("max_lookback_days") or 30
+    max_lookback_days = table_spec.get("max_lookback_days") or 7
     max_lookback_date = (datetime.utcnow() + relativedelta(days=-max_lookback_days)).strftime('%Y-%m-%dT%H:%M:%S')
     from_time = modified_since if modified_since > max_lookback_date else max_lookback_date
     

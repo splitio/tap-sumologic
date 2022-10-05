@@ -23,20 +23,23 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
     """
     table_name = table_spec.get("table_name")
     modified_since = get_bookmark(state, table_name, 'modified_since') or config['start_date']
+    end_date = config.get('end_date')
 
     LOGGER.info('Syncing table "%s".', table_name)
 
     max_lookback_days = table_spec.get("max_lookback_days") or 7
-    max_lookback_date = (datetime.utcnow() + relativedelta(days=-max_lookback_days)).strftime('%Y-%m-%dT%H:%M:%S')
-    from_time = modified_since if modified_since > max_lookback_date else max_lookback_date
-    
-    LOGGER.info('Getting records since %s.', from_time)
-    
     # we stop at 5 minutes ago because data may not all be there yet in Sumo
     # if we do real time we would have gaps of data for the data that comes in later.
-    end_time = datetime.utcnow() + relativedelta(minutes=-5) 
+    end_time = datetime.utcnow() + relativedelta(minutes=-5)
+    if end_date:
+        end_time = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S')
+    max_lookback_date = (end_time + relativedelta(days=-max_lookback_days)).strftime('%Y-%m-%dT%H:%M:%S')
+    from_time = modified_since if modified_since > max_lookback_date else max_lookback_date
+    
     to_time = end_time.strftime('%Y-%m-%dT%H:%M:%S')
     time_zone = 'UTC'
+    
+    LOGGER.info('Getting records since %s.', from_time)
 
     q = table_spec.get('query')
     records_streamed = 0

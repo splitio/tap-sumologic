@@ -20,6 +20,7 @@ This tap:
     "sumologic_access_key": "ACCESS_KEY",
     "sumologic_root_url": "https://api.us2.sumologic.com/api",
     "start_date": "2020-01-01T00:00:00",
+    "end_date": "2020-01-05T00:00:00",
     "tables": [{
         "query": "_sourceCategory=prod/fastly/sdk | _timeslice 1d as day | count by day, api_key",
         "table_name": "my_table",

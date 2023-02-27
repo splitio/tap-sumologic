@@ -25,6 +25,7 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
     modified_since = get_bookmark(state, table_name, 'modified_since') or config['start_date']
     end_date = config.get('end_date')
 
+    LOGGER.info('Config info - start_date: %s - end_date: %s', config['start_date'], end_date)
     LOGGER.info('Syncing table "%s".', table_name)
 
     max_lookback_days = table_spec.get("max_lookback_days") or 7
@@ -39,7 +40,7 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
     to_time = end_time.strftime('%Y-%m-%dT%H:%M:%S')
     time_zone = 'UTC'
     
-    LOGGER.info('Getting records since %s.', from_time)
+    LOGGER.info('Getting records since %s to %s.', from_time, to_time)
 
     q = table_spec.get('query')
     records_streamed = 0
